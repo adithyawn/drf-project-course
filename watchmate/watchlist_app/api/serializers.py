@@ -1,25 +1,46 @@
 from rest_framework import serializers
 # import Movie model to be used in create method
-from watchlist_app.models import Movie
+from watchlist_app.models import Watchlist, StreamPlatform
+
+class StreamPlatformSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StreamPlatform
+        fields = "__all__"
+
 
 # If dont want to declare variable / field again (reuse from Movie model (from watchlist_app.models import Movie)) can use (serializers.ModelSerializer). It's diffent with (serializers.Serializer)
-class MovieSerializer(serializers.ModelSerializer):
+class WatchlistSerializer(serializers.ModelSerializer):
+    # Custom Field . Add Field without add it in Model 
+    # len_name = serializers.SerializerMethodField()
+
     class Meta:
-        model = Movie
-        # fields = "__all__"
+        model = Watchlist
+        fields = "__all__"
         # If want spesific field. It will only show {"id":1,"name":TEST} without desc and active. If you post name, desc automaticaly will be "" and active will be true
-        # fields = ['id','name']
+        # fields = ['id','name','len_name']
 
         # Also can use exclude so it will be same like fields= ['id','name']. But fields must be empty / deleted
-        exclude = ['description','active']
+        # exclude = ['description','active']
+
+    # object to get field
+    # def get_len_name(self,object):
+    #     length = len(object.name)
+    #     return length
+
+    # ouput :
+    #     {
+    #     "id": 4,
+    #     "name": "Star Wars Mandor Harian",
+    #     "len_name": 23
+    # }
 
     # validation method
-    def validate_name(self,data):
-        if len(data) < 2:
-            # return exception
-            raise serializers.ValidationError("Name is too short")
-        else:
-            return data    
+    # def validate_name(self,data):
+    #     if len(data) < 2:
+    #         # return exception
+    #         raise serializers.ValidationError("Name is too short")
+    #     else:
+    #         return data    
 
 # '''
 # # validation function

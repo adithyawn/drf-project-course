@@ -7,25 +7,42 @@ from rest_framework.response import Response
 #class based view
 from rest_framework.views import APIView
 
-from watchlist_app.models import Movie
-from watchlist_app.api.serializers import MovieSerializer
+from watchlist_app.models import Watchlist,StreamPlatform
+from watchlist_app.api.serializers import WatchlistSerializer,StreamPlatformSerializer
+
+class StreamPlatformListAV(APIView):
+    def get(self,request):
+        platform = StreamPlatform.objects.all()
+        
+        serializer = StreamPlatformSerializer(platform, many=True)
+
+        return Response(serializer.data)
+
+    def post(self,request):
+        serializer = StreamPlatformSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # class based view
-class MovieListAV(APIView):
+class WatchListAV(APIView):
     def get(self,request):
-        movies = Movie.objects.all()
+        movies = Watchlist.objects.all()
         # print("movies :", movies)
         # movies return <QuerySet [<Object1>, <Object2>,..]>,  And we are trying to serialize the list as a single object. Use many=True tells the serializer that a list of objects being passed for serialization.
         
         # How Serializer Works? Convert QuerySet in movies DB to JSON but validate first with MovieSerializer
-        serializer = MovieSerializer(movies, many=True)
+        serializer = WatchlistSerializer(movies, many=True)
 
         # print("serializer :", serializer.data[1]['name']) output : Starwars Mandalorian
         return Response(serializer.data)
 
     def post(self,request):
         # Get requested data from input form then Serializer it to MovieSerializer
-        serializer = MovieSerializer(data=request.data)
+        serializer = WatchlistSerializer(data=request.data)
         # print("serializer : ",serializer) , output : MovieSerializer(data={'name': 'Mandor Harian', 'description': 'About Mandor', 'active': False})
 
         # if valid then save to serializer & DB 
@@ -35,28 +52,28 @@ class MovieListAV(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class MovieDetailAV(APIView):
+class WatchDetailAV(APIView):
     def get(self,request,id):
         try:
-            movie = Movie.objects.get(id=id)
+            movie = Watchlist.objects.get(id=id)
             # print("movie : ", movie) output will return Class of <Object1>
-        except Movie.DoesNotExist:
+        except Watchlist.DoesNotExist:
             # Because will return only 1 QuerySet by id so doesnt need many=True in serializer
             # How Serializer Works? Convert Class of <Object1> in movie DB to JSON but validate first with MovieSerializer
             return Response({"message":"Movie Not Found !"},status=status.HTTP_404_NOT_FOUND)
 
-        serializer = MovieSerializer(movie)
+        serializer = WatchlistSerializer(movie)
         # print("serializer : ",serializer) , ouput : MovieSerializer(<Movie: Star Wars Mandalorian>)
         return Response(serializer.data)        
 
     def put(self,request,id):
         try:
-            movie = Movie.objects.get(id=id)
-        except Movie.DoesNotExist:
+            movie = Watchlist.objects.get(id=id)
+        except Watchlist.DoesNotExist:
             return Response({"message":"Movie Not Found !"},status=status.HTTP_404_NOT_FOUND)
 
         # Convert and validate updated data with serializer. Then update movie DB (spesific id) with that data. Remember def update(self, instance,validated_data) ! movie is current class DB which will pass instance & data is updated data given from form / input which will pass validated_data
-        serializer = MovieSerializer(movie, data=request.data)
+        serializer = WatchlistSerializer(movie, data=request.data)
 
         # print("serializer : ",serializer) , output : MovieSerializer(data={'name': 'Mandor Harian', 'description': 'About Mandor', 'active': False})
         #  if valid then save
@@ -70,8 +87,8 @@ class MovieDetailAV(APIView):
     def delete(self,request,id):
         # in DELETE doesnt need Serializer because it dont need to return json
         try :
-            movie = Movie.objects.get(id=id)
-        except Movie.DoesNotExist:
+            movie = Watchlist.objects.get(id=id)
+        except Watchlist.DoesNotExist:
             return Response({"message":"Movie Not Found !"},status=status.HTTP_404_NOT_FOUND)
         movie.delete()
         return Response({"message":"Movie has been deleted !"})
