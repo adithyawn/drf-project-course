@@ -23,5 +23,5 @@ urlpatterns = [
     # state the path for watchlist_app OLD
     # path('movie/',include("watchlist_app.urls")),
     # state the path for watchlist_app/api USING DRF
-    path('movie/',include("watchlist_app.api.urls")),
+    path('watch/',include("watchlist_app.api.urls")),
 ]
