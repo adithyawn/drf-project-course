@@ -1,27 +1,32 @@
 from rest_framework import serializers
 # import Movie model to be used in create method
-from watchlist_app.models import Watchlist, StreamPlatform, Review
+from watchlist_app.models import Movie
 
-class ReviewSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Review
-        fields = "__all__"
-
-class WatchlistSerializer(serializers.ModelSerializer):
-
-    # show nested one to many relationship from movies { reviews. Read Only true means it can't be inputed from movie, can only be inputed automatically when give rating (from rating input / model)
-    reviews = ReviewSerializer(many=True, read_only=True)
+# If dont want to declare variable / field again (reuse from Movie model (from watchlist_app.models import Movie)) can use (serializers.ModelSerializer). It's diffent with (serializers.Serializer)
+class MovieSerializer(serializers.ModelSerializer):
+    # Custom Field . Add Field without add it in Model 
+    len_name = serializers.SerializerMethodField()
 
     class Meta:
-        model = Watchlist
-        fields = "__all__"
+        model = Movie
+        # fields = "__all__"
+        # If want spesific field. It will only show {"id":1,"name":TEST} without desc and active. If you post name, desc automaticaly will be "" and active will be true
+        fields = ['id','name','len_name']
 
+        # Also can use exclude so it will be same like fields= ['id','name']. But fields must be empty / deleted
+        # exclude = ['description','active']
 
     # object to get field
     def get_len_name(self,object):
         length = len(object.name)
         return length
+
+    # ouput :
+    #     {
+    #     "id": 4,
+    #     "name": "Star Wars Mandor Harian",
+    #     "len_name": 23
+    # }
 
     # validation method
     def validate_name(self,data):
@@ -30,60 +35,6 @@ class WatchlistSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Name is too short")
         else:
             return data    
-
-class StreamPlatformSerializer(serializers.ModelSerializer):
-    # Nested Serializer One to Many {"id":..,"name":..,"about":..,"website":.., "watchlist": { [ {"id" : 1 } , {"id" : 2 }, ...] } }
-    # create new field show what movies platform has. watchlist name is important because we have defined in models => platform = models.ForeignKey(StreamPlatform, on_delete=models.CASCADE, related_name="watchlist")
-    # many=True because watchlist has many items (array) \
-
-    # All key in movie showed
-    # watchlist = WatchlistSerializer(many=True,read_only=True)
-
-    # If want to constrain what key is showed in watchlist and it's String
-    # https://www.django-rest-framework.org/api-guide/relations/#serializer-relations
-    
-    # watchlist = serializers.StringRelatedField(many=True)
-    #  {"id":..,"name":..,"about":..,"website":.., "watchlist": ["The Avengers","The Mandalorian"] }
-
-    # If want to show only primary key in watchlist
-    # watchlist = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-    #  {"id":..,"name":..,"about":..,"website":.., "watchlist": [1,2] }
-
-    # If want to show hyperlink directly in watchlist
-    watchlist = serializers.HyperlinkedRelatedField(
-        many=True,
-        read_only=True,
-        # view_name refer to name in urls
-        view_name='movie-detail',
-        # Could not resolve URL for hyperlinked relationship using view name "movie-details". You may have failed to include the related model in your API, or incorrectly configured the `lookup_field` attribute on this field.
-        lookup_field='id'
-    )
-    #  {"id":..,"name":..,"about":..,"website":.., "watchlist": ['http://.../1','http://.../2'] }
-
-    #return str refer to models 
-    def __str__(self):
-        return self.title
-        
-
-
-
-    
-    class Meta:
-        model = StreamPlatform
-        fields = "__all__"
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # '''
 # # validation function
