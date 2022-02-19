@@ -9,6 +9,8 @@ from rest_framework.views import APIView
 
 #generic based views (mixin). Typically when using the generic views, you'll override the view, and set several class attributes.
 from rest_framework import generics
+from rest_framework import viewsets
+from django.shortcuts import get_object_or_404
 
 # One of the big wins of using class-based views is that it allows us to easily compose reusable bits of behaviour. The create/retrieve/update/delete operations that we've been using so far are going to be pretty similar for any model-backed API views we create. Those bits of common behaviour are implemented in REST framework's mixin classes.
 # The mixin classes provide the actions that are used to provide the basic view behavior. Note that the mixin classes provide action methods rather than defining the handler methods, such as .get() and .post(), directly. This allows for more flexible composition of behavior.
@@ -19,33 +21,123 @@ from rest_framework import mixins
 from watchlist_app.models import Review, Watchlist,StreamPlatform
 from watchlist_app.api.serializers import WatchlistSerializer,StreamPlatformSerializer,ReviewSerializer
 
-# Using Mixin
-class ReviewDetail(mixins.RetrieveModelMixin,mixins.UpdateModelMixin,mixins.DestroyModelMixin,generics.GenericAPIView):
+# Using Concrete View Classes
+# https://www.django-rest-framework.org/tutorial/3-class-based-views/#using-generic-class-based-views
 
+# THIS IS NOT SHOW SPESIFIC 
+# class ReviewList(generics.ListCreateAPIView):
+#     queryset = Review.objects.all()
+#     serializer_class = ReviewSerializer
+
+class ReviewCreate(generics.CreateAPIView):
+    serializer_class = ReviewSerializer
+
+    # Save and deletion hooks: The following methods are provided by the mixin classes, and provide easy overriding of the object save or deletion behavior.
+    # def perform_create(self, serializer):
+        # serializer.save(user=self.request.user)
+    
+    def perform_create(self,serializer):
+
+        print(serializer)
+        # GET DATA JSON FROM FORM >> data={'rating': 1, 'description': '1', 'active': False}
+
+        # pk from parameter or form
+        # pk = self.kwargs.get('pk')
+        pk = self.kwargs['pk']
+        # get Watchlist form
+        # if you know it's one object that matches your query, use get. It will fail if it's more than one.
+        # otherwise use filter, which gives you a list of objects.
+        # filter similiar with .filter.all() in flask, it will return Query Set (List of Clas). <class 'django.db.models.query.QuerySet'> . <QuerySet [<Watchlist: The Mandalorian>]>.
+        # Whereas .all() in django will return all list without filtering
+        # get similiar with .filter.first() in flask, will return <class 'watchlist_app.models.Watchlist'> . <The Mandalorian>.
+        # Because we only want to get 1 spesific class, use get instead
+        movie = Watchlist.objects.get(pk=pk)
+        # movie_old = Review.objects.get(watchlist=pk)
+
+        print("pk : ",pk)
+        # print("pk_old : ",pk_old)
+        print("movie : ",type(movie))
+        print("movie : ",movie)
+
+        # for i in movie:
+        #     print(i) 
+        # <class 'watchlist_app.models.Watchlist'>
+        # print("movie_old : ",movie_old)
+
+        # then save it to watchlist ReviewSerializer which integrated with Watchlist model
+
+        serializer.save(watchlist=movie)
+
+        # WITH this serializer will overide created & update object
+
+
+class ReviewList(generics.ListAPIView):
+    # 'ReviewList' should either include a `serializer_class` attribute, or override the `get_serializer_class()` method.
+    serializer_class = ReviewSerializer
+
+    # get_queryset(self) is Method in https://www.django-rest-framework.org/api-guide/generic-views/#genericapiview . Returns the queryset that should be used for list views, and that should be used as the base for lookups in detail views. Defaults to returning the queryset specified by the queryset attribute.
+
+    def get_queryset(self):
+        # kwarfs is to get value from ReviewList.pk
+        pk = self.kwargs['pk']
+        # print(self) >> <watchlist_app.api.views.ReviewList object at 0x0000021E4C4ADA00>
+        # print(self.kwargs) >> {'pk': 2}
+        # print(self.kwargs['pk']) >> 2
+        
+        # Review is from Models Review
+        return Review.objects.filter(watchlist=pk)
+
+class ReviewDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
 
-    # Retrieve will get one data from spesific id, whereas list get all data (list)
-    def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
+# '''
+# # Using GenericAPIView and Mixins
+# class ReviewDetail(mixins.RetrieveModelMixin,mixins.UpdateModelMixin,mixins.DestroyModelMixin,generics.GenericAPIView):
 
-    def update(self, request, *args, **kwargs):
-        return self.put(request, *args, **kwargs)   
+#     queryset = Review.objects.all()
+#     serializer_class = ReviewSerializer
 
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
+#     # Retrieve will get one data from spesific id, whereas list get all data (list)
+#     def get(self, request, *args, **kwargs):
+#         return self.retrieve(request, *args, **kwargs)
 
-# Using Mixin
-class ReviewList(mixins.ListModelMixin,mixins.CreateModelMixin,generics.GenericAPIView):
+#     def update(self, request, *args, **kwargs):
+#         return self.put(request, *args, **kwargs)   
 
-    queryset = Review.objects.all()
-    serializer_class = ReviewSerializer
+#     def delete(self, request, *args, **kwargs):
+#         return self.destroy(request, *args, **kwargs)
 
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
+# # Using GenericAPIView and Mixins
+# class ReviewList(mixins.ListModelMixin,mixins.CreateModelMixin,generics.GenericAPIView):
 
-    def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)    
+#     queryset = Review.objects.all()
+#     serializer_class = ReviewSerializer
+
+#     def get(self, request, *args, **kwargs):
+#         return self.list(request, *args, **kwargs)
+
+#     def post(self, request, *args, **kwargs):
+#         return self.create(request, *args, **kwargs)    
+
+# '''
+
+# USING VIEWSET & ROUTERS. THIS IS CONFUSING NOT RECOMENDED
+# class StreamPlatformVS(viewsets.ViewSet):
+
+#     # ERROR : type object 'StreamPlatform' has no attribute 'objects'. Because Class name same with Model name (StreamPlatform) so change class name to StreamPlatformVS  
+
+#     def list(self, request):
+#         queryset = StreamPlatform.objects.all()
+#         serializer = StreamPlatformSerializer(queryset, many=True,context={'request': request})
+#         return Response(serializer.data)
+
+#     def retrieve(self, request, pk=None):
+#         queryset = StreamPlatform.objects.all()
+#         watchlist = get_object_or_404(queryset, pk=pk)
+#         # `HyperlinkedRelatedField` requires the request in the serializer context. Add `context={'request': request}` when instantiating the serializer.
+#         serializer = StreamPlatformSerializer(watchlist,context={'request': request})
+#         return Response(serializer.data)
 
 
 class StreamPlatformListAV(APIView):
@@ -80,10 +172,10 @@ class StreamPlatformListAV(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class StreamPlatformDetailAV(APIView):
-    def get(self,request,id):
+    def get(self,request,pk):
 
         try:
-            platform = StreamPlatform.objects.get(id=id)
+            platform = StreamPlatform.objects.get(pk=pk)
             # print("platform : ", platform)
             # output will return Class of <Object1>
 
@@ -100,9 +192,9 @@ class StreamPlatformDetailAV(APIView):
 
         return Response(serializer.data)        
 
-    def put(self,request,id):
+    def put(self,request,pk):
         try:
-            platform = StreamPlatform.objects.get(id=id)
+            platform = StreamPlatform.objects.get(pk=pk)
         except StreamPlatform.DoesNotExist:
             return Response({"message":"Platform Not Found !"},status=status.HTTP_404_NOT_FOUND)
 
@@ -120,11 +212,11 @@ class StreamPlatformDetailAV(APIView):
             # return error if format not valid
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self,request,id):
+    def delete(self,request,pk):
         # in DELETE doesnt need Serializer because it dont need to return json
 
         try :
-            platform = StreamPlatform.objects.get(id=id)
+            platform = StreamPlatform.objects.get(pk=pk)
 
         except StreamPlatform.DoesNotExist:
 
@@ -171,9 +263,9 @@ class WatchListAV(APIView):
 
 class WatchDetailAV(APIView):
 
-    def get(self,request,id):
+    def get(self,request,pk):
         try:
-            movie = Watchlist.objects.get(id=id)
+            movie = Watchlist.objects.get(pk=pk)
             # print("movie : ", movie) output will return Class of <Object1>
 
         except Watchlist.DoesNotExist:
@@ -188,10 +280,10 @@ class WatchDetailAV(APIView):
 
         return Response(serializer.data)        
 
-    def put(self,request,id):
+    def put(self,request,pk):
 
         try:
-            movie = Watchlist.objects.get(id=id)
+            movie = Watchlist.objects.get(pk=pk)
 
         except Watchlist.DoesNotExist:
 
@@ -215,12 +307,12 @@ class WatchDetailAV(APIView):
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self,request,id):
+    def delete(self,request,pk):
 
         # in DELETE doesnt need Serializer because it dont need to return json
 
         try :
-            movie = Watchlist.objects.get(id=id)
+            movie = Watchlist.objects.get(pk=pk)
 
         except Watchlist.DoesNotExist:
 
@@ -229,6 +321,8 @@ class WatchDetailAV(APIView):
         movie.delete()
 
         return Response({"message":"Movie has been deleted !"})
+
+
 
 
 

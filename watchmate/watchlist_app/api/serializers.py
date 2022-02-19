@@ -6,7 +6,10 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = "__all__"
+        # fields = "__all__"
+        # using exclude watchlist if doesnt want to input watchlist
+        # The `exclude` option must be a list or tuple. Got str. Put comma so it will not be string
+        exclude = ('watchlist',)
 
 class WatchlistSerializer(serializers.ModelSerializer):
 
@@ -56,7 +59,7 @@ class StreamPlatformSerializer(serializers.ModelSerializer):
         # view_name refer to name in urls
         view_name='movie-detail',
         # Could not resolve URL for hyperlinked relationship using view name "movie-details". You may have failed to include the related model in your API, or incorrectly configured the `lookup_field` attribute on this field.
-        lookup_field='id'
+        lookup_field='pk'
     )
     #  {"id":..,"name":..,"about":..,"website":.., "watchlist": ['http://.../1','http://.../2'] }
 
